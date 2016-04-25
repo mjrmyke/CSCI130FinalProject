@@ -30,10 +30,13 @@ footer {
   position: fixed;
   text-align: center;
   bottom: 0;
-  left: 0;
-  height: 10vw;
+  height: 8vw;
   background-color: #3132FF;
   width: 100%;
+  font-size: 1vw;
+  color: #2D83E8;
+
+
 }
 
 
@@ -62,7 +65,7 @@ label {
     text-align: center;
 }
 
-#footy {
+#names {
 
     text-align: center;
     color: #2D83E8;
