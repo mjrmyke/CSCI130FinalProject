@@ -30,13 +30,15 @@ html, body, #atf {
 
 }
 
+
+
 #cta {
 
     /* set the height of the cta container */
     height: 8vw;
 
     /* set the color of the cta container */
-    background-color: #303B37;
+    background-color: #580FFF;
 
     /* center text and button containers */
     /*      #cta-txt, #cta-btn */
@@ -46,7 +48,11 @@ html, body, #atf {
     align-items: center;
 }
 
-
+@media (min-width: 700px){
+  #cta{
+    background-color: #303B37;
+  }
+}
 
 #btn {
     height: 4vw;
