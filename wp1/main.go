@@ -7,8 +7,10 @@ import (
 )
 
 func serve(res http.ResponseWriter, req *http.Request) {
+	//create template from index.html file
 	temp, err := template.ParseFiles("index.html")
 	if err != nil {
+		log.Fatalln(err, "Failed Parsing File")
 	}
 	temp.Execute(res, nil)
 }
