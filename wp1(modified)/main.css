@@ -1,0 +1,102 @@
+html, body, header, main, section, footer, div, a, ul, li, h1, h2 {
+    /* simple reset - resets browser's default styling */
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+
+html, body, #atf {
+    height: 100%;
+}
+
+
+
+#atf-img {
+	 background-image: url("wing.jpg");
+	 background-color: #8e8e8e;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: top center;
+    background-size: cover;
+    /* grow the hero image to fill in unused space */
+	height:80%;
+   flex-grow: 2;
+}
+
+#atf {
+
+	  display: flex;
+    flex-direction: column;
+
+}
+
+
+
+#cta {
+
+    /* set the height of the cta container */
+    height: 8vw;
+
+    /* set the color of the cta container */
+    background-color: #580FFF;
+
+    /* center text and button containers */
+    /*      #cta-txt, #cta-btn */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (min-width: 700px){
+  #cta{
+    background-color: #303B37;
+  }
+}
+
+#btn {
+    height: 4vw;
+    width: 24vw;
+    /*border radius makes the button rounded*/
+    border-radius: 20px;
+    margin: 1vw;
+    background-color: #2DE89C;
+    font-size: 2vw;
+    /* sets color of text*/
+    color: rgba(0,0,0,.4);
+}
+
+#entry {
+    align-items: center;
+    width: 50%;
+    font-size: 2vw;
+    text-align: center;
+}
+
+#btn:hover {
+    color: #4D55FF;
+}
+
+lookup {
+	display: flex;
+  flex-direction:row;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+	/*flex-grow:0;*/
+	background-color:#44A148;
+	height:90%;
+}
+
+names {
+  display: flex;
+  flex-direction:row;
+  justify-content: center;
+  align-items: center;
+  text-align: left;
+	background-color:#44A148;
+  height:30%;
+  font-size:30px;
+ 
+}
