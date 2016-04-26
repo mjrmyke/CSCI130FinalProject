@@ -1,16 +1,14 @@
 package main
 
-import(
+import (
 	"html/template"
 	"log"
 	"net/http"
 )
 
 func serve(res http.ResponseWriter, req *http.Request) {
-	temp := template.New("index.html")
 	temp, err := template.ParseFiles("index.html")
 	if err != nil {
-		log.Fatalln(err,"Failed!")
 	}
 	temp.Execute(res, nil)
 }
@@ -22,4 +20,3 @@ func main() {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
-
