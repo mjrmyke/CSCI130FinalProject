@@ -16,7 +16,7 @@
       <div class = "footeritem"><a href='/login'>Login</a>     </div>
       <div class = "footeritem"><a href='#'>About Us</a>     </div>
       <div class = "footeritem"><a href='#'>Contact</a>     </div>
-      <div class = "footeritem"><a href='/state'>{{.}} </a> </div>
+      <div class = "footeritem"><a href='/state/?q={{.}}'>{{.}} </a> </div>
 
     </div>
 
@@ -27,8 +27,8 @@
       <h1>State</h1>
       <br>
       State is a valuable resource when making webpages. However, it is not always easy to maintain. At times, computers will have cookies and/or javascript disabled, making the job of maintaining state difficult. If you utilize Queries through the URL, you can circumvent some of the problems that arise on these specific systems.
-      <br>
-      <h1>{{.Val}} was passed in!</h1>
+
+      <h1>{{.}} was passed in!</h1>
 
 </div>
 </div>
