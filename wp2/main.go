@@ -17,11 +17,16 @@ var temp *template.Template
 
 func init() {
 	http.Handle("/public/", http.StripPrefix("/public", http.FileServer(http.Dir("public/"))))
+
 	http.HandleFunc("/", serve)
 	http.HandleFunc("/login/", loginpage)
 	http.HandleFunc("/register/", registerpage)
 	http.HandleFunc("/state/", statepage)
 	http.HandleFunc("/home/", homepage)
+	http.HandleFunc("/settings/", settingspage)
+
+	//API CALLS
+	http.HandleFunc("/api/unique/", unique)
 
 	temp = template.Must(template.ParseGlob("public/*.html"))
 
@@ -99,6 +104,79 @@ func loginpage(res http.ResponseWriter, req *http.Request) {
 	}
 
 	temp.ExecuteTemplate(res, "login.html", mysess)
+}
+
+func settingspage(res http.ResponseWriter, req *http.Request) {
+	var mysess Session
+	var myuser User
+	var retrieveduser User
+	ctx := appengine.NewContext(req)
+	_, session, _ := getsess(req)
+
+	mysess.id = session
+
+	info, _ := memcache.Get(ctx, session)
+
+	json.Unmarshal(info.Value, &myuser)
+	mysess.User = myuser
+
+	if req.Method == "POST" {
+		//get data from form
+		newpass := req.FormValue("newpass")
+		mypass1 := req.FormValue("password1")
+		mypass2 := req.FormValue("password2")
+
+		//check the datastore for that info
+		key := datastore.NewKey(ctx, "EMAILS", myuser.Email, 0, nil)
+		err := datastore.Get(ctx, key, &retrieveduser)
+
+		//passwords dont match
+		if mypass1 != mypass2 {
+			log.Infof(ctx, "Password does not match confirmed pass")
+			mysess.alerts += "passwords do not match!!"
+			temp.ExecuteTemplate(res, "register.html", mysess)
+		}
+
+		//hash pass
+		hiddenpass, err := bcrypt.GenerateFromPassword([]byte(mypass1), bcrypt.DefaultCost)
+		log.Infof(ctx, "hiddenpass:", string(hiddenpass))
+		if err != nil {
+			log.Errorf(ctx, "Could not bcrypt the pass", err)
+			http.Error(res, err.Error(), 500)
+		}
+
+		if err == nil && bcrypt.CompareHashAndPassword([]byte(retrieveduser.Password), []byte(mypass1)) == nil {
+
+			hiddenpass, err := bcrypt.GenerateFromPassword([]byte(newpass), bcrypt.DefaultCost)
+			log.Infof(ctx, "hiddenpass:", string(hiddenpass))
+			if err != nil {
+				log.Errorf(ctx, "Could not bcrypt the pass", err)
+				http.Error(res, err.Error(), 500)
+			}
+
+			//create the registered user
+			reggeduser := User{
+				Email:    myuser.Email,
+				Password: string(hiddenpass),
+			}
+
+			//make key for hash table
+			userkey := datastore.NewKey(ctx, "EMAILS", reggeduser.Email, 0, nil)
+			//save to datastore
+			userkey, err = datastore.Put(ctx, userkey, &reggeduser)
+
+			mysess.id = makesess(res, req, retrieveduser)
+
+			http.Redirect(res, req, `/home?q=`+mysess.id, http.StatusSeeOther)
+
+		} else {
+			log.Infof(ctx, "User information was not found in datastore, Not Logged in!")
+			mysess.alerts = "Login failed!!"
+		}
+
+	}
+
+	temp.ExecuteTemplate(res, "settings.html", mysess)
 }
 
 func statepage(res http.ResponseWriter, req *http.Request) {
