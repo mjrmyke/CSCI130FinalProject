@@ -74,7 +74,7 @@ func loginpage(res http.ResponseWriter, req *http.Request) {
 		userpass := req.FormValue("password")
 
 		//check the datastore for that info
-		key := datastore.NewKey(ctx, "user", useremail, 0, nil)
+		key := datastore.NewKey(ctx, "EMAILS", useremail, 0, nil)
 		err := datastore.Get(ctx, key, &retrieveduser)
 
 		log.Infof(ctx, "UNAME:", useremail)
@@ -88,9 +88,9 @@ func loginpage(res http.ResponseWriter, req *http.Request) {
 		log.Infof(ctx, "hiddenpass:", string(hiddenpass))
 		log.Infof(ctx, "myuser.pass:", myuser.Password)
 
-		if err == nil && bcrypt.CompareHashAndPassword([]byte(myuser.Password), []byte(userpass)) == nil {
-			mysess.id = makesess(res, req, myuser)
-			http.Redirect(res, req, `/index?q=`+mysess.id, http.StatusSeeOther)
+		if err == nil && bcrypt.CompareHashAndPassword([]byte(retrieveduser.Password), []byte(userpass)) == nil {
+			mysess.id = makesess(res, req, retrieveduser)
+			http.Redirect(res, req, `/home?q=`+mysess.id, http.StatusSeeOther)
 		} else {
 			log.Infof(ctx, "User information was not found in datastore, Not Logged in!")
 			mysess.alerts = "Login failed!!"
@@ -125,7 +125,7 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 		log.Infof(ctx, "UNAME:", myemail)
 		log.Infof(ctx, "PASS:", mypass1)
 
-		userkey := datastore.NewKey(ctx, "user", myuser.Email, 0, nil)
+		userkey := datastore.NewKey(ctx, "EMAILS", myuser.Email, 0, nil)
 		err := datastore.Get(ctx, userkey, &myuser)
 		log.Infof(ctx, "myuser.email:", myuser.Email)
 		log.Infof(ctx, "myuser.pass:", myuser.Password)
@@ -161,7 +161,7 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 		}
 
 		//make key for hash table
-		userkey = datastore.NewKey(ctx, "User", reggeduser.Email, 0, nil)
+		userkey = datastore.NewKey(ctx, "EMAILS", reggeduser.Email, 0, nil)
 		//save to datastore
 		userkey, err = datastore.Put(ctx, userkey, &reggeduser)
 
