@@ -6,8 +6,8 @@ type User struct {
 }
 
 type Session struct {
-	User    User
-	id      string
-	logged   bool
-	Message string
+	User   User
+	id     string
+	logged bool
+	alerts string
 }
