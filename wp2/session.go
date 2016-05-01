@@ -17,10 +17,10 @@ func makesess(res http.ResponseWriter, req *http.Request, myuser User) string {
 
 	//make cookie and place it
 	cookie := &http.Cookie{
-		Name:     "Session",
-		Value:    id.String(),
-		Secure:   true,
-		HttpOnly: true,
+		Name:  "Session-id",
+		Value: id.String(),
+		// Secure:   true,
+		// HttpOnly: true,
 	}
 	http.SetCookie(res, cookie)
 
@@ -43,4 +43,40 @@ func makesess(res http.ResponseWriter, req *http.Request, myuser User) string {
 
 	//returns jsonned info
 	return cookie.Value
+}
+
+func getsess(req *http.Request) (*memcache.Item, string, error) {
+	//new context for goog app engine
+	ctx := appengine.NewContext(req)
+
+	cookie, err := req.Cookie("Session-id")
+
+	if err != nil {
+		key := "q"
+		val := req.URL.Query().Get(key)
+
+		if val != "" {
+			item, err := memcache.Get(ctx, val)
+			//not found
+			if err != nil {
+				return &memcache.Item{}, "", err
+			}
+
+			//returns item from memcache, session info in url, and no error!
+			return item, val, nil
+		}
+		//error and no items
+		return &memcache.Item{}, "", err
+	}
+
+	//if at this line, you had a cookie!
+	//get the values from memcache from cookie value!
+	item, err := memcache.Get(ctx, cookie.Value)
+
+	if err != nil {
+		return &memcache.Item{}, "", err
+	}
+
+	return item, cookie.Value, nil
+
 }

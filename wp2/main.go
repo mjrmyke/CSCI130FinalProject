@@ -1,15 +1,16 @@
 package finalproject
 
 import (
+	"encoding/json"
 	"html/template"
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/nu7hatch/gouuid"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
 )
 
 var temp *template.Template
@@ -20,48 +21,89 @@ func init() {
 	http.HandleFunc("/login/", loginpage)
 	http.HandleFunc("/register/", registerpage)
 	http.HandleFunc("/state/", statepage)
+	http.HandleFunc("/home/", homepage)
 
 	temp = template.Must(template.ParseGlob("public/*.html"))
 
 }
 
-func serve(res http.ResponseWriter, req *http.Request) {
+func homepage(res http.ResponseWriter, req *http.Request) {
+	ctx := appengine.NewContext(req)
+	var mysess Session
+	var myuser User
+	_, session, err := getsess(req)
 
-	cookie, err := req.Cookie("session-id")
-
+	//if not logged in
 	if err != nil {
-		id, _ := uuid.NewV4()
-		cookie = &http.Cookie{
-			Name:  "session-id",
-			Value: id.String(),
-			// Secure: true,
-			HttpOnly: true,
-		}
+		http.Redirect(res, req, `/`, http.StatusSeeOther)
+		return
 	}
 
-	http.SetCookie(res, cookie)
+	mysess.id = session
 
-	temp.ExecuteTemplate(res, "index.html", cookie)
+	info, err := memcache.Get(ctx, session)
+
+	json.Unmarshal(info.Value, &myuser)
+	mysess.User = myuser
+
+	temp.ExecuteTemplate(res, "homepage.html", mysess)
+}
+
+func serve(res http.ResponseWriter, req *http.Request) {
+	// ctx := appengine.NewContext(req)
+	var mysess Session
+	_, session, err := getsess(req)
+	mysess.id = session
+
+	if err == nil {
+		http.Redirect(res, req, `/index?q=`+mysess.id, http.StatusSeeOther)
+	}
+
+	temp.ExecuteTemplate(res, "index.html", nil)
 }
 
 func loginpage(res http.ResponseWriter, req *http.Request) {
+	var mysess Session
+	var myuser User
+	ctx := appengine.NewContext(req)
 
-	temp.ExecuteTemplate(res, "login.html", nil)
+	if req.Method == "POST" {
+		//get data from form
+		useremail := req.FormValue("username")
+		userpass := req.FormValue("password")
+
+		//check the datastore for that info
+		key := datastore.NewKey(ctx, "Users", useremail, 0, nil)
+		err := datastore.Get(ctx, key, &myuser)
+
+		log.Infof(ctx, "UNAME:", useremail)
+		log.Infof(ctx, "PASS:", userpass)
+
+		hiddenpass, err := bcrypt.GenerateFromPassword([]byte(userpass), bcrypt.DefaultCost)
+
+		if err != nil || string(hiddenpass) != myuser.Password {
+			log.Infof(ctx, "*** Error Info: Login Failed, given credentials not found in datastore. ***")
+			mysess.alerts = "Logged in Failed! \n Email or password incorrect"
+		} else {
+			//login passed
+			mysess.id = makesess(res, req, myuser)
+			http.Redirect(res, req, `/dashboard?id=`+mysess.id, http.StatusSeeOther)
+		}
+
+		// if err == nil && bcrypt.CompareHashAndPassword([]byte(myuser.Password), []byte(userpass)) == nil {
+		// 	mysess.id = makesess(res, req, myuser)
+		// 	http.Redirect(res, req, `/index?q=`+mysess.id, http.StatusSeeOther)
+		// } else {
+		// 	log.Infof(ctx, "User information was not found in datastore, Not Logged in!")
+		// 	mysess.alerts = "Login failed!!"
+		// }
+
+	}
+
+	temp.ExecuteTemplate(res, "login.html", mysess)
 }
 
 func statepage(res http.ResponseWriter, req *http.Request) {
-
-	// cookie, err := req.Cookie("session-id")
-	//
-	// if err != nil {
-	// 	id, _ := uuid.NewV4()
-	// 	cookie = &http.Cookie{
-	// 		Name:  "session-id",
-	// 		Value: id.String(),
-	// 		// Secure: true,
-	// 		HttpOnly: true,
-	// 	}
-	// }
 
 	key := "q"
 	Val := req.URL.Query().Get(key)
@@ -124,9 +166,9 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 		}
 
 		newsessionid := makesess(res, req, myuser)
-		http.Redirect(res, req, "/index?q="+newsessionid, http.StatusSeeOther)
+		http.Redirect(res, req, "/home/?q="+newsessionid, http.StatusSeeOther)
 
 	}
 
-	temp.ExecuteTemplate(res, "register.html", nil)
+	temp.ExecuteTemplate(res, "register.html", mysess)
 }
