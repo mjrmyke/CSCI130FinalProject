@@ -17,8 +17,9 @@ func makesess(res http.ResponseWriter, req *http.Request, myuser User) string {
 
 	//make cookie and place it
 	cookie := &http.Cookie{
-		Name:  "Session-id",
+		Name:  "Session",
 		Value: id.String(),
+		Path:  "/",
 		// Secure:   true,
 		// HttpOnly: true,
 	}
@@ -49,7 +50,7 @@ func getsess(req *http.Request) (*memcache.Item, string, error) {
 	//new context for goog app engine
 	ctx := appengine.NewContext(req)
 
-	cookie, err := req.Cookie("Session-id")
+	cookie, err := req.Cookie("Session")
 
 	if err != nil {
 		key := "q"

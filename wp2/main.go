@@ -56,7 +56,7 @@ func serve(res http.ResponseWriter, req *http.Request) {
 	mysess.id = session
 
 	if err == nil {
-		http.Redirect(res, req, `/index?q=`+mysess.id, http.StatusSeeOther)
+		http.Redirect(res, req, `/home?q=`+mysess.id, http.StatusSeeOther)
 	}
 
 	temp.ExecuteTemplate(res, "index.html", nil)
@@ -65,6 +65,7 @@ func serve(res http.ResponseWriter, req *http.Request) {
 func loginpage(res http.ResponseWriter, req *http.Request) {
 	var mysess Session
 	var myuser User
+	var retrieveduser User
 	ctx := appengine.NewContext(req)
 
 	if req.Method == "POST" {
@@ -73,30 +74,27 @@ func loginpage(res http.ResponseWriter, req *http.Request) {
 		userpass := req.FormValue("password")
 
 		//check the datastore for that info
-		key := datastore.NewKey(ctx, "Users", useremail, 0, nil)
-		err := datastore.Get(ctx, key, &myuser)
+		key := datastore.NewKey(ctx, "user", useremail, 0, nil)
+		err := datastore.Get(ctx, key, &retrieveduser)
 
 		log.Infof(ctx, "UNAME:", useremail)
 		log.Infof(ctx, "PASS:", userpass)
+		log.Infof(ctx, "myuser.email:", myuser.Email)
+		log.Infof(ctx, "myuser.PASS:", myuser.Password)
+		log.Infof(ctx, "ret.email:", retrieveduser.Email)
+		log.Infof(ctx, "ret.PASS:", retrieveduser.Password)
 
 		hiddenpass, err := bcrypt.GenerateFromPassword([]byte(userpass), bcrypt.DefaultCost)
+		log.Infof(ctx, "hiddenpass:", string(hiddenpass))
+		log.Infof(ctx, "myuser.pass:", myuser.Password)
 
-		if err != nil || string(hiddenpass) != myuser.Password {
-			log.Infof(ctx, "*** Error Info: Login Failed, given credentials not found in datastore. ***")
-			mysess.alerts = "Logged in Failed! \n Email or password incorrect"
-		} else {
-			//login passed
+		if err == nil && bcrypt.CompareHashAndPassword([]byte(myuser.Password), []byte(userpass)) == nil {
 			mysess.id = makesess(res, req, myuser)
-			http.Redirect(res, req, `/dashboard?id=`+mysess.id, http.StatusSeeOther)
+			http.Redirect(res, req, `/index?q=`+mysess.id, http.StatusSeeOther)
+		} else {
+			log.Infof(ctx, "User information was not found in datastore, Not Logged in!")
+			mysess.alerts = "Login failed!!"
 		}
-
-		// if err == nil && bcrypt.CompareHashAndPassword([]byte(myuser.Password), []byte(userpass)) == nil {
-		// 	mysess.id = makesess(res, req, myuser)
-		// 	http.Redirect(res, req, `/index?q=`+mysess.id, http.StatusSeeOther)
-		// } else {
-		// 	log.Infof(ctx, "User information was not found in datastore, Not Logged in!")
-		// 	mysess.alerts = "Login failed!!"
-		// }
 
 	}
 
@@ -122,9 +120,15 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 		mypass1 := req.FormValue("password1")
 		mypass2 := req.FormValue("password2")
 		myuser.Email = myemail
+		myuser.Password = mypass1
 
-		userkey := datastore.NewKey(ctx, "Users", myuser.Email, 0, nil)
+		log.Infof(ctx, "UNAME:", myemail)
+		log.Infof(ctx, "PASS:", mypass1)
+
+		userkey := datastore.NewKey(ctx, "user", myuser.Email, 0, nil)
 		err := datastore.Get(ctx, userkey, &myuser)
+		log.Infof(ctx, "myuser.email:", myuser.Email)
+		log.Infof(ctx, "myuser.pass:", myuser.Password)
 
 		//Username not unique
 		if err == nil {
@@ -144,6 +148,7 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 
 		//hash pass
 		hiddenpass, err := bcrypt.GenerateFromPassword([]byte(mypass1), bcrypt.DefaultCost)
+		log.Infof(ctx, "hiddenpass:", string(hiddenpass))
 		if err != nil {
 			log.Errorf(ctx, "Could not bcrypt the pass", err)
 			http.Error(res, err.Error(), 500)
@@ -157,7 +162,8 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 
 		//make key for hash table
 		userkey = datastore.NewKey(ctx, "User", reggeduser.Email, 0, nil)
-		userkey, err = datastore.Put(ctx, userkey, &reggeduser) //save to datastore
+		//save to datastore
+		userkey, err = datastore.Put(ctx, userkey, &reggeduser)
 
 		if err != nil {
 			log.Errorf(ctx, "While Registering, could not store user to datastore", err)
@@ -165,7 +171,9 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		newsessionid := makesess(res, req, myuser)
+		newsessionid := makesess(res, req, reggeduser)
+		log.Errorf(ctx, "myuser", reggeduser)
+
 		http.Redirect(res, req, "/home/?q="+newsessionid, http.StatusSeeOther)
 
 	}
