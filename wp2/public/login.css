@@ -108,7 +108,7 @@ html, body, #atf {
 }
 
 .login-block input#username:focus {
-  background: #fff url('user.png"') 20px bottom no-repeat;
+  background: #fff url("user.png") 20px bottom no-repeat;
 
     background-size: 16px 80px;
 }
