@@ -55,7 +55,6 @@ func homepage(res http.ResponseWriter, req *http.Request) {
 }
 
 func serve(res http.ResponseWriter, req *http.Request) {
-	// ctx := appengine.NewContext(req)
 	var mysess Session
 	_, session, err := getsess(req)
 	mysess.id = session

@@ -6,7 +6,6 @@ type User struct {
 }
 
 type Session struct {
-	User   User
-	id     string
-	logged bool
+	User User
+	id   string
 }
