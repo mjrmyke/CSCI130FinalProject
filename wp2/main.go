@@ -98,7 +98,6 @@ func loginpage(res http.ResponseWriter, req *http.Request) {
 			http.Redirect(res, req, `/home?q=`+mysess.id, http.StatusSeeOther)
 		} else {
 			log.Infof(ctx, "User information was not found in datastore, Not Logged in!")
-			mysess.alerts = "Login failed!!"
 		}
 
 	}
@@ -133,7 +132,6 @@ func settingspage(res http.ResponseWriter, req *http.Request) {
 		//passwords dont match
 		if mypass1 != mypass2 {
 			log.Infof(ctx, "Password does not match confirmed pass")
-			mysess.alerts += "passwords do not match!!"
 			temp.ExecuteTemplate(res, "register.html", mysess)
 		}
 
@@ -171,7 +169,6 @@ func settingspage(res http.ResponseWriter, req *http.Request) {
 
 		} else {
 			log.Infof(ctx, "User information was not found in datastore, Not Logged in!")
-			mysess.alerts = "Login failed!!"
 		}
 
 	}
@@ -212,7 +209,6 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 		if err == nil {
 			log.Infof(ctx, "!!problem in register, User already created!!")
 
-			mysess.alerts = "Email already exists \n "
 			temp.ExecuteTemplate(res, "register.html", mysess)
 			return
 		}
@@ -220,7 +216,6 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 		//passwords dont match
 		if mypass1 != mypass2 {
 			log.Infof(ctx, "Password does not match confirmed pass")
-			mysess.alerts += "passwords do not match!!"
 			temp.ExecuteTemplate(res, "register.html", mysess)
 		}
 

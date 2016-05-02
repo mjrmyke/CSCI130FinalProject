@@ -9,5 +9,4 @@ type Session struct {
 	User   User
 	id     string
 	logged bool
-	alerts string
 }
