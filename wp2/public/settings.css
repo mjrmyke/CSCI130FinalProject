@@ -140,6 +140,7 @@ html, body, #atf {
 }
 
 .footeritem{
+  flex-wrap:nowrap;
   transition: 0.3s ease;
   color: #ffffff;
   border-top: 4px solid #3fa46a;
