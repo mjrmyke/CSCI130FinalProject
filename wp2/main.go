@@ -77,6 +77,12 @@ func loginpage(res http.ResponseWriter, req *http.Request) {
 		useremail := req.FormValue("username")
 		userpass := req.FormValue("password")
 
+		//validate email
+		if validateEmail(useremail) == false {
+			http.Redirect(res, req, "/login/?m=BadEmail", http.StatusSeeOther)
+			return
+		}
+
 		//check the datastore for that info
 		key := datastore.NewKey(ctx, "EMAILS", useremail, 0, nil)
 		err := datastore.Get(ctx, key, &retrieveduser)
@@ -195,6 +201,12 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 		mypass2 := req.FormValue("password2")
 		myuser.Email = myemail
 		myuser.Password = mypass1
+
+		//validate email
+		if validateEmail(myemail) == false {
+			http.Redirect(res, req, "/register/?m=BadEmail", http.StatusSeeOther)
+			return
+		}
 
 		log.Infof(ctx, "UNAME:", myemail)
 		log.Infof(ctx, "PASS:", mypass1)
