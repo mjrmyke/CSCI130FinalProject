@@ -95,6 +95,19 @@ html, body, #atf {
 }
 
 
+.items .item {
+	width: 9%;
+  box-sizing: border-box;
+  background: #e0ddd5;
+  color: #171e42;
+  padding: 10px;
+  margin: 1px;
+
+}
+.items {
+	overflow: hidden; /* simple clearfix */
+  background-color: #44A148;
+}
 #entry {
     align-items: center;
     width: 50%;

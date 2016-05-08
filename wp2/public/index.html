@@ -28,13 +28,26 @@
 	</main>
 </div>
 <div id ="lookup">
-<form>
+<form method = "POST">
  <h1> Enter the Word to Lookup!</h1></br>
  <input id="entry" name="new-word" type="text" autocomplete="off">
 
  <input id="btn" type="submit" value="Lookup Word">
 
 </form>
+
+</div>
+<center>
+<div class = "items">
+{{range $words :=  .Noun.Syn}}
+
+
+<div class ="item"> {{$words}} </div>
+
+
+
+{{end}}
+</center>
 </div>
 
 

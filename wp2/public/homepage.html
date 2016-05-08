@@ -27,15 +27,36 @@
 	</main>
 </div>
 <div id ="lookup">
-<form>
+  <form method="POST" enctype="multipart/form-data">
  <h1> Hello {{.User.Email}}</h1>
- <h1> Enter the Word to Lookup!</h1></br>
- <input id="entry" name="new-word" type="text" autocomplete="off">
+ <h1> Upload your files below!</h1></br>
+ <h1> Click on a photo to download it!</h1></br>
+ <input type="file" name="uploader">
+ <input type="submit">
 
- <input id="btn" type="submit" value="Lookup Word">
 
 </form>
 </div>
+<photolist>
+{{range $photos :=  .User.Photos}}
+<br>
+<center>
+
+<a download="{{$photos}}" href="https://storage.googleapis.com/testenv-1273.appspot.com/{{$photos}}" title="{{$photos}}">
+    <img alt="ImageName" src="https://storage.googleapis.com/testenv-1273.appspot.com/{{$photos}}" width="50%" height="50%">
+</a>
+
+<br>
+
+{{end}}
+<br>
+<br>
+<br>
+</photolist>
+
+
+
+
 
 
 <names>

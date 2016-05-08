@@ -6,11 +6,13 @@ import (
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/appengine/urlfetch"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/memcache"
+	"google.golang.org/cloud/storage"
 )
 
 var temp *template.Template
@@ -34,6 +36,13 @@ func init() {
 
 func homepage(res http.ResponseWriter, req *http.Request) {
 	ctx := appengine.NewContext(req)
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Errorf(ctx, "error making new client")
+	}
+	defer client.Close()
+
 	var mysess Session
 	var myuser User
 	_, session, err := getsess(req)
@@ -51,10 +60,59 @@ func homepage(res http.ResponseWriter, req *http.Request) {
 	json.Unmarshal(info.Value, &myuser)
 	mysess.User = myuser
 
+	if req.Method == "POST" {
+
+		mpf, hdr, err := req.FormFile("uploader")
+		if err != nil {
+			log.Errorf(ctx, "ERROR handler req.FormFile: ", err)
+			http.Error(res, "We were unable to upload your file\n", http.StatusInternalServerError)
+			return
+		}
+		defer mpf.Close()
+
+		err = uploadFile(req, mpf, hdr, myuser)
+		if err != nil {
+			log.Errorf(ctx, "ERROR handler uploadFile: ", err)
+			http.Error(res, "We were unable to accept your file\n"+err.Error(), http.StatusUnsupportedMediaType)
+			return
+		}
+
+		err = uploadSmallerFile(req, mpf, hdr, myuser)
+		if err != nil {
+			log.Errorf(ctx, "ERROR handler uploadFile: ", err)
+			http.Error(res, "We were unable to accept your file\n"+err.Error(), http.StatusUnsupportedMediaType)
+			return
+		}
+
+	}
+
+	query := &storage.Query{
+		Prefix: myuser.Email + "/",
+	}
+
+	objs, err := client.Bucket(gcsBucket).List(ctx, query)
+	if err != nil {
+		log.Errorf(ctx, "ERROR in query_delimiter")
+		return
+	}
+
+	var bucketphotos []string
+
+	for _, obj := range objs.Results {
+		bucketphotos = append(bucketphotos, obj.Name)
+		//	html += `<img src=https://storage.googleapis.com/testenv-1273.appspot.com/` + obj.Name + `>` + "\n"
+	}
+
+	myuser.Photos = bucketphotos
+	mysess.User = myuser
+
 	temp.ExecuteTemplate(res, "homepage.html", mysess)
 }
 
 func serve(res http.ResponseWriter, req *http.Request) {
+	ctx := appengine.NewContext(req)
+	// Fill the record with the data from the JSON
+	var record SynApiData
 	var mysess Session
 	_, session, err := getsess(req)
 	mysess.id = session
@@ -63,7 +121,48 @@ func serve(res http.ResponseWriter, req *http.Request) {
 		http.Redirect(res, req, `/home?q=`+mysess.id, http.StatusSeeOther)
 	}
 
-	temp.ExecuteTemplate(res, "index.html", nil)
+	if req.Method == "POST" {
+		//get data from form
+		word := req.FormValue("new-word")
+		apikey := "b5a921e2e1ca6ec782682b1b4654f3f1"
+		url := "http://words.bighugelabs.com/api/2/" + apikey + "/" + word + "/json"
+		//	http://words.bighugelabs.com/api/2/b5a921e2e1ca6ec782682b1b4654f3f1/word/json
+
+		// Build the request
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			log.Infof(ctx, "NewRequest: ", err)
+			return
+		}
+
+		// For control over HTTP client headers,
+		// redirect policy, and other settings,
+		// create a Client
+		// A Client is an HTTP client
+		client := urlfetch.Client(ctx)
+
+		// Send the request via a client
+		// Do sends an HTTP request and
+		// returns an HTTP response
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Infof(ctx, "Do: ", err)
+			return
+		}
+
+		// Callers should close resp.Body
+		// when done reading from it
+		// Defer the closing of the body
+		defer resp.Body.Close()
+
+		// Use json.Decode for reading streams of JSON data
+		if err := json.NewDecoder(resp.Body).Decode(&record); err != nil {
+			log.Infof(ctx, "Decodin probs:", err)
+		}
+
+	}
+
+	temp.ExecuteTemplate(res, "index.html", record)
 }
 
 func loginpage(res http.ResponseWriter, req *http.Request) {
@@ -193,6 +292,10 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 
 	var mysess Session
 	var myuser User
+
+	//string slice photos
+	var myphotos []string
+
 	ctx := appengine.NewContext(req)
 
 	if req.Method == "POST" {
@@ -201,6 +304,7 @@ func registerpage(res http.ResponseWriter, req *http.Request) {
 		mypass2 := req.FormValue("password2")
 		myuser.Email = myemail
 		myuser.Password = mypass1
+		myuser.Photos = myphotos
 
 		//validate email
 		if validateEmail(myemail) == false {
