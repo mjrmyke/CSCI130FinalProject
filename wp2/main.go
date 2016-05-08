@@ -77,12 +77,12 @@ func homepage(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err = uploadSmallerFile(req, mpf, hdr, myuser)
-		if err != nil {
-			log.Errorf(ctx, "ERROR handler uploadFile: ", err)
-			http.Error(res, "We were unable to accept your file\n"+err.Error(), http.StatusUnsupportedMediaType)
-			return
-		}
+		// err = uploadSmallerFile(req, mpf, hdr, myuser)
+		// if err != nil {
+		// 	log.Errorf(ctx, "ERROR handler uploadFile: ", err)
+		// 	http.Error(res, "We were unable to accept your file\n"+err.Error(), http.StatusUnsupportedMediaType)
+		// 	return
+		// }
 
 	}
 
@@ -91,19 +91,22 @@ func homepage(res http.ResponseWriter, req *http.Request) {
 	}
 
 	objs, err := client.Bucket(gcsBucket).List(ctx, query)
-	if err != nil {
+	if err == nil {
+
+		var bucketphotos []string
+
+		for _, obj := range objs.Results {
+			bucketphotos = append(bucketphotos, obj.Name)
+			//	html += `<img src=https://storage.googleapis.com/testenv-1273.appspot.com/` + obj.Name + `>` + "\n"
+		}
+
+		myuser.Photos = bucketphotos
+
+	} else {
 		log.Errorf(ctx, "ERROR in query_delimiter")
-		return
+
 	}
 
-	var bucketphotos []string
-
-	for _, obj := range objs.Results {
-		bucketphotos = append(bucketphotos, obj.Name)
-		//	html += `<img src=https://storage.googleapis.com/testenv-1273.appspot.com/` + obj.Name + `>` + "\n"
-	}
-
-	myuser.Photos = bucketphotos
 	mysess.User = myuser
 
 	temp.ExecuteTemplate(res, "homepage.html", mysess)
